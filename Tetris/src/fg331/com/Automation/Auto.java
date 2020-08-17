@@ -16,6 +16,7 @@ public class Auto {
     int endY;
     int offsetY = 0;
     int turns = 0;
+    int localTempHeight = 0;
     private boolean[][] grid = new boolean[10][20];
     private ArrayList<Integer> actions = new ArrayList<>();
     private ArrayList<Integer> tempActions = new ArrayList<>();
@@ -105,6 +106,10 @@ public class Auto {
         //TODO при не оптимална позиция не открива по - ниската позиция
         //TODO ще бъде добре ако има не оптимална позиция много по - ниско отколкот една оптимална да изберете първото
 
+        //TODO да има код след като стигне до място да провери дали има голяма разлика на височините
+        //TODO ако в края има дупка от три блокчета да се вкара 'Л' парчето
+        //TODO най - вдясно да се поставя само четворката може би
+
         //
 
         actions = new ArrayList<>();
@@ -166,6 +171,8 @@ public class Auto {
                         int height = 0;
                         int maxHeight = 0;
 
+                        boolean diffy = false;
+
                         if (bound)
                             for (Point p : blockPoints) {
                                 if (p.y + 1 < 20) {
@@ -218,9 +225,9 @@ public class Auto {
                                         }
                                     }
                                     if (round)
-                                    if (game.map[p.x][p.y + 1] != 0) {
-                                        cascade++;
-                                    }
+                                        if (game.map[p.x][p.y + 1] != 0) {
+                                            cascade++;
+                                        }
                                 } else {
                                     cascade++;
                                 }
@@ -230,17 +237,40 @@ public class Auto {
 
                             //TODO първо да вземе макс височина след това обща височина и след това колко е полегнало
 //                            if ((maxHeight > maxTemp) || (height > heightTemp && cascade > cascadeTemp)) {
-                            if ((maxHeight > maxTemp || height > heightTemp)  &&( cascade > cascadeTemp)) {
+                            //първо важно е височина след това каскада след това макс височина
+                            if (height > heightTemp) {
+//                            if ((maxHeight > maxTemp || height > heightTemp)  &&( cascade > cascadeTemp)) {
 //                            if ((maxHeight > maxTemp && cascade > cascadeTemp) || (height > heightTemp )) {
-                                heightTemp = height; //TODO когато имам този ред второто парче излиза от матрицата
-                                maxTemp = maxHeight;
-                                turnsTemp = j;
-                                cascadeTemp = cascade;
-                                positionNotFound = false;
-                                System.arraycopy(blockPoints, 0, blockPointsTemp, 0, 4);
 
-                                globalBegX = blockPoints[1].x;
-                                globalBegY = blockPoints[1].y;
+                                //TODO тук да е проверката за дали се оставя височина
+
+                                for (int l = 0; l < game.MAP_WIDTH; l++) {
+                                    int verticalHeight = 0;
+                                    for (int m = 0; m < game.MAP_HEIGHT; m++) {
+                                        if (game.map[l][m] != 0) {
+                                            verticalHeight = m;
+                                            break;
+                                        }
+                                    }
+
+                                    if (verticalHeight * 4 - height > 3 * 4) {
+                                        diffy = true;
+                                        break;
+                                    }
+                                }
+
+//                                if (!diffy) {
+
+                                    heightTemp = height; //TODO когато имам този ред второто парче излиза от матрицата
+                                    maxTemp = maxHeight;
+                                    turnsTemp = j;
+                                    cascadeTemp = cascade;
+                                    positionNotFound = false;
+                                    System.arraycopy(blockPoints, 0, blockPointsTemp, 0, 4);
+
+                                    globalBegX = blockPoints[1].x;
+                                    globalBegY = blockPoints[1].y;
+//                                }
                             }
                         }
                         spacing = 0;
@@ -480,23 +510,23 @@ public class Auto {
         //TODO 99 проблем когато маха един или повече редове всичко изчезва а не само това което трябва
 
 
-        switch (game.currentBlock.getShape()) {
-            case 1:
-            case 6:
-            case 3:
-            case 2:
-            case 5:
-                do {
-                    game.currentBlock.automaticMoveDown();
-                } while (game.currentBlock.getY(1) < 0);
-                break;
-            case 4:
-            case 7:
-                do {
-                    game.currentBlock.automaticMoveDown();
-                } while (game.currentBlock.getY(1) < 1);
-                break;
-        }
+//        switch (game.currentBlock.getShape()) {
+//            case 1:
+//            case 6:
+//            case 3:
+//            case 2:
+//            case 5:
+//                do {
+//                    game.currentBlock.automaticMoveDown();
+//                } while (game.currentBlock.getY(1) < 0);
+//                break;
+//            case 4:
+//            case 7:
+//                do {
+//                    game.currentBlock.automaticMoveDown();
+//                } while (game.currentBlock.getY(1) < 1);
+//                break;
+//        }
 
         for (int i = 0; i < turnsTemp; i++) {
             game.currentBlock.automaticRotationLeft();
@@ -684,12 +714,12 @@ public class Auto {
             case 3:
             case 2:
                 endX = 5;
-                endY = 0;
+                endY = -2;
                 break;
             case 4:
             case 7:
                 endX = 5; //TODO може да трябва да не е 4 а 5
-                endY = 1;
+                endY = -1;
                 break;
 
         }
@@ -784,25 +814,33 @@ public class Auto {
                                     }
                                 }
 
-                                if (match)
+                                if (match) {
                                     break;
+                                }
 
                                 if (!match) {
-                                    if (game.map[p.x][tempY] == 0)
+                                    if (game.map[p.x][tempY] == 0) {
                                         spacing++;
+                                    }
                                 }
 
                                 tempY++;
                             }
+
                         }
 
+                        int localHeight = 0;
+                        for (Point p : blockPoints) {
+                            localHeight += p.y;
+                        }
 //                        System.out.println(spacing + "\t" + spacingTemp + "Z345AF");
 
                         //TODO да има и проверка за височина ама не абсолютна а само тежест
-                        if (spacing < spacingTemp) {
+                        if (spacing < spacingTemp && localHeight > localTempHeight) {
                             //TODO тук доразгледай че може не открива пътя и остава без нищо
 
                             heightTemp = height; //TODO когато имам този ред второто парче излиза от матрицата
+                            localTempHeight = localHeight;
                             maxTemp = maxHeight;
                             turnsTemp = j;
                             positionNotFound = false;
